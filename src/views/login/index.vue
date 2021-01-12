@@ -98,6 +98,11 @@ export default {
 
         // 关闭 loading
         this.loginLoading = false
+
+        // 将接口返回的用户相关数据放到本地存储
+        // 本地只存储字符串
+        // 如果需要存储对象数 数组类型的数据 则把它们转换为JSON格式的字符转存储
+        window.localStorage.setItem('user', JSON.stringify(result.data.data))
       }).catch(error => {
         console.log(error)
         this.$message.error('手机号或验证码错误')
