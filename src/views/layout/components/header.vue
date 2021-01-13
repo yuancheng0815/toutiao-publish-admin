@@ -53,7 +53,6 @@ export default {
     sendCollapse () {
       this.isCollapse = !this.isCollapse
       bus.$emit('sendCollapse', this.isCollapse)
-      alert(this.isCollapse)
     },
     onLogout () {
       this.$confirm('确认退出吗？', '退出图示', {
