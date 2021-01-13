@@ -1,7 +1,7 @@
 <template>
   <div class="header-container">
     <div>
-      <i class="el-icon-s-fold"></i>
+      <i :class="{'el-icon-s-fold': !isCollapse, 'el-icon-s-unfold': isCollapse }"  @click="sendCollapse"></i>
       <span>杭州天翼科技有限公司</span>
     </div>
     <el-dropdown>
@@ -12,7 +12,9 @@
       </div>
       <el-dropdown-menu slot="dropdown">
         <el-dropdown-item>设置</el-dropdown-item>
-        <el-dropdown-item>退出</el-dropdown-item>
+        <el-dropdown-item
+          @click.native="onLogout"
+        >退出</el-dropdown-item>
       </el-dropdown-menu>
     </el-dropdown>
   </div>
@@ -20,19 +22,22 @@
 
 <script>
 import { getUserProfile } from '@/api/user.js'
+import bus from '@/utils/bus.js'
 export default {
   name: 'AppHeader',
   components: {},
   props: {},
   data () {
     return {
-      user: {} // 当前登录用户信息
+      user: {}, // 当前登录用户信息
+      isCollapse: false
     }
   },
   computed: {},
   watch: {},
   created () {
     // 组件初始化好后 请求获取用户信息
+    this.loadUserProfile()
   },
   mounted () {},
   methods: {
@@ -43,7 +48,27 @@ export default {
         res => {
           this.user = res.data.data
         }
-      ).catch()
+      )
+    },
+    sendCollapse () {
+      this.isCollapse = !this.isCollapse
+      bus.$emit('sendCollapse', this.isCollapse)
+      alert(this.isCollapse)
+    },
+    onLogout () {
+      this.$confirm('确认退出吗？', '退出图示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        window.localStorage.removeItem('user')
+        this.$router.push('/login')
+      }).catch(() => {
+        this.$message({
+          type: 'info',
+          message: '已取消退出'
+        })
+      })
     }
   }
 }
@@ -57,6 +82,18 @@ export default {
   justify-content: space-between;
   align-items: center;
   border-bottom: 1px solid #ccc;
+  div {
+    display: flex;
+    align-items: center;
+  }
+    .el-icon-s-fold {
+      padding-right: 6px;
+      font-size: 28px;
+    }
+    .el-icon-s-unfold {
+      padding-right: 6px;
+      font-size: 28px
+    }
   .avatar-wrap {
     display: flex;
     align-items: center;

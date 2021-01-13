@@ -1,6 +1,6 @@
 <template>
-  <el-container>
-    <el-aside width="200px" class="aside">
+  <el-container class="layout-container">
+    <el-aside width="auto" class="aside">
       <app-aside class="aside-menu" />
     </el-aside>
     <el-container>
@@ -8,7 +8,8 @@
         <app-header />
       </el-header>
       <el-main class="main">
-
+        <!-- 子路由出口 -->
+        <router-view/>
       </el-main>
     </el-container>
   </el-container>
@@ -26,12 +27,14 @@ export default {
   },
   props: {},
   data () {
-    return {}
+    return {
+    }
   },
   computed: {},
   watch: {},
   created () {},
-  mounted () {},
+  mounted () {
+  },
   methods: {}
 }
 </script>
@@ -44,15 +47,15 @@ export default {
   top: 0;
   bottom: 0;
 }
-
 .aside {
   background-color: #d3dce6;
+  .aside-menu {
+    height: 100%;
+  }
 }
-
 .header {
   background-color: #b3c0d1;
 }
-
 .main {
   background-color: #e9eef3;
 }
