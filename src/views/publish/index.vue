@@ -9,30 +9,53 @@
         </el-breadcrumb>
         <!-- /面包屑路径导航 -->
       </div>
-      <el-form ref="form" :model="form" label-width="40px">
-        <el-form-item label="标题">
-          <el-input v-model="form.name"></el-input>
+      <el-form
+        :model="article"
+        :rules="formRules"
+        ref="publish-form"
+        label-width="60px">
+        <el-form-item label="标题" prop="title">
+          <el-input v-model="article.title"></el-input>
         </el-form-item>
-        <el-form-item label="内容">
-          <el-input type="textarea" v-model="form.desc"></el-input>
+        <el-form-item label="内容" prop="content">
+          <!-- <el-input type="textarea" v-model="article.content"></el-input> -->
+          <el-tiptap
+            v-model="article.content"
+            :extensions="extensions"
+            height="350"
+            palceholder="请输入文章内容"
+            lang="zh"
+          ></el-tiptap>
         </el-form-item>
         <el-form-item label="封面">
-          <el-radio-group v-model="form.resource">
-            <el-radio label="单图"></el-radio>
-            <el-radio label="三图"></el-radio>
-            <el-radio label="无图"></el-radio>
-            <el-radio label="自动"></el-radio>
+          <el-radio-group v-model="article.cover.type">
+            <el-radio :label="1">单图</el-radio>
+            <el-radio :label="3">三图</el-radio>
+            <el-radio :label="0">无图</el-radio>
+            <el-radio :label="-1">自动</el-radio>
           </el-radio-group>
+          <template v-if="article.cover.type > 0">
+            <el-row :gutter="20">
+              <el-col :sapn="4" v-for="(item, index) in article.cover.type" :key="index">
+                <upload-image></upload-image>
+              </el-col>
+            </el-row>
+          </template>
         </el-form-item>
-        <el-form-item label="频道">
-          <el-select v-model="form.region" placeholder="请选择频道">
-            <el-option label="区域一" value="shanghai"></el-option>
-            <el-option label="区域二" value="beijing"></el-option>
+        <el-form-item label="频道" prop="channel_id">
+          <el-select v-model="article.channel_id" placeholder="请选择频道">
+            <el-option
+            :label="channel.name"
+            :value="channel.id"
+            v-for="(channel, index) in channels"
+            :key="index"
+            >
+            </el-option>
           </el-select>
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="onSubmit">发表</el-button>
-          <el-button>存入草稿</el-button>
+          <el-button type="primary" @click="onPublish(false)">发表</el-button>
+          <el-button @click="onPublish(true)">存入草稿</el-button>
         </el-form-item>
       </el-form>
     </el-card>
@@ -40,39 +63,165 @@
 </template>
 
 <script>
+import {
+  getArticleChannels,
+  addArticle,
+  getArticle,
+  updateArticle
+} from '@/api/article.js'
+import {
+  ElementTiptap,
+  Doc,
+  Text,
+  Paragraph,
+  Heading,
+  Bold,
+  Underline,
+  Italic,
+  Image,
+  Strike,
+  ListItem,
+  BulletList,
+  OrderedList,
+  TodoItem,
+  TodoList,
+  HorizontalRule,
+  Fullscreen,
+  Preview,
+  CodeBlock,
+  TextColor
+} from 'element-tiptap'
+import 'element-tiptap/lib/index.css'
+import { uploadImage } from '@/api/image.js'
+import UploadImage from '@/views/publish/components/upload-image.vue'
+
 export default {
   name: 'PublishIndex',
-  components: {},
+  components: {
+    'el-tiptap': ElementTiptap,
+    UploadImage
+  },
   props: {},
   data () {
     return {
-      form: {
-        name: '',
-        region: '',
-        date1: '',
-        date2: '',
-        delivery: false,
-        type: [],
-        resource: '',
-        desc: ''
-      },
+      extensions: [
+        new Doc(),
+        new Text(),
+        new Paragraph(),
+        new Heading({ level: 3 }),
+        new Bold({ bubble: true }), // 在气泡菜单中渲染菜单按钮
+        new Image({
+          // 默认会把图片生成 base64 字符串和内容存储在一起，如果需要自定义图片上传
+          uploadRequest (file) {
+            // 如果接口要求 Content-Type 是 multipart/form-data，则请求体必须使用 FormData
+            const fd = new FormData()
+            fd.append('image', file)
+            // 第1个 return 是返回 Promise 对象
+            // 为什么？因为 axios 本身就是返回 Promise 对象
+            return uploadImage(fd).then(res => {
+              console.log(res)
+              return res.data.data.url
+            })
+          }
+        }),
+        new Underline(), // 下划线
+        new Italic(), // 斜体
+        new Strike(), // 删除线
+        new HorizontalRule(), // 华丽的分割线
+        new ListItem(),
+        new BulletList(), // 无序列表
+        new OrderedList(), // 有序列表
+        new TodoItem(),
+        new TodoList(),
+        new Fullscreen(),
+        new Preview(),
+        new CodeBlock(),
+        new TextColor()
+      ],
+      channels: [], // 频道列表
       article: {
         title: '', // 文章标题
         content: '', // 文章内容
         cover: { // 文章封面
           type: 0, // 封面类型 -1:自动，0-无图，1-1张，3-3张
           images: [] // 封面图片的地址
-        }
+        },
+        channel_id: null
+      },
+      formRules: {
+        title: [
+          { required: true, message: '请输入文章标题', trigger: 'blur' },
+          { min: 5, max: 30, message: '长度在5 到 30 个字符', trigger: 'blur' }
+        ],
+        content: [
+          {
+            validator (rule, value, callback) {
+              if (value === '<p></p>') {
+                callback(new Error('请输入文章内容'))
+              } else {
+                callback()
+              }
+            }
+          },
+          { required: true, message: '请输入文章内容', trigger: 'blur' }
+        ],
+        channel_id: [
+          { required: true, message: '请选择文章频道' }
+        ]
       }
     }
   },
   computed: {},
   watch: {},
-  created () {},
+  created () {
+    this.loadChannels()
+    if (this.$route.query.id) {
+      this.loadArticle()
+    }
+  },
   mounted () {},
   methods: {
-    onSubmit () {
-      console.log('submit!')
+    loadChannels () {
+      getArticleChannels().then(res => {
+        this.channels = res.data.data.channels
+      })
+    },
+    onPublish (draft = false) {
+      this.$refs['publish-form'].validate(valid => {
+        if (!valid) {
+          return
+        }
+        console.log(this.article)
+        const articleId = this.$route.query.id
+        if (articleId) {
+          // 执行修改操作
+          updateArticle(articleId, this.article, draft).then(res => {
+            this.$message({
+              message: `${draft ? '存入草稿' : '发布'}成功`,
+              type: 'success'
+            })
+            this.$router.push('/article')
+          }).catch(err => {
+            this.$message.error(`${draft ? '存入草稿' : '发布'}失败`)
+            console.log(err)
+          })
+        } else {
+          addArticle(this.article, draft).then(res => {
+            this.$message({
+              message: '发布成功',
+              type: 'success'
+            })
+            this.$router.push('/article')
+          }).catch(err => {
+            this.$message.error(err)
+          })
+        }
+      })
+    },
+    loadArticle () {
+      getArticle(this.$route.query.id).then(res => {
+        this.article = res.data.data
+      })
     }
   }
 }

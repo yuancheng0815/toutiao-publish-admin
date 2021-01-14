@@ -6,6 +6,7 @@ import Layout from '@/views/layout/'
 import NProgress from 'nprogress'
 import ArticleIndex from '@/views/article/index.vue'
 import PublishIndex from '@/views/publish/index.vue'
+import ImageIndex from '@/views/image/index.vue'
 
 Vue.use(VueRouter)
 
@@ -35,6 +36,11 @@ const routes = [
         path: '/publish',
         name: 'publish',
         component: PublishIndex
+      },
+      {
+        path: '/image',
+        name: 'image',
+        component: ImageIndex
       }
     ]
   }
