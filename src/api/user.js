@@ -25,3 +25,36 @@ export const getUserProfile = () => {
     }
   })
 }
+
+/**
+ * 编辑用户资料
+ */
+export const updateUserProfile = (data) => {
+  const user = JSON.parse(window.localStorage.getItem('user'))
+  return request({
+    method: 'PATCH',
+    url: '/mp/v1_0/user/profile',
+    headers: {
+      // 属性名和值都得看接口的要求
+      // 属性名：Authorization，接口要求的
+      // 属性值：Bearer空格token数据
+      Authorization: `Bearer ${user.token}`
+    },
+    data
+  })
+}
+
+/**
+ * 用户头像编辑
+ */
+export const updateUserPhoto = data => {
+  const user = JSON.parse(window.localStorage.getItem('user'))
+  return request({
+    method: 'PATCH',
+    url: '/mp/v1_0/user/photo',
+    headers: {
+      Authorization: `Bearer ${user.token}`
+    },
+    data
+  })
+}
