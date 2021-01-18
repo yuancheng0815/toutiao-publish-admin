@@ -9,7 +9,11 @@
         <el-radio-button :label="false">全部</el-radio-button>
         <el-radio-button :label="true">收藏</el-radio-button>
       </el-radio-group>
-      <el-button type="success" size="mini">添加素材</el-button>
+      <el-button
+        type="success"
+        size="mini"
+        @click="dialogVisible = true"
+      >添加素材</el-button>
     </div>
     <el-row :gutter="10">
       <el-col
@@ -19,14 +23,18 @@
         :lg=4
         v-for="(image, index) in images"
         :key="index"
+        @click.native="selected = index"
         class="image-item"
       >
         <el-image
-          style="height: 100px;width:100%;"
+          style="height: 150px;width:100%;"
           :src="image.url"
           fit="cover"
           lazy
         ></el-image>
+        <div class="selected" v-if="selected === index">
+          <div></div>
+        </div>
         <div class="image-action">
           <el-button
             :icon="image.is_collected ? 'el-icon-star-on' : 'el-icon-star-off'"
@@ -40,6 +48,8 @@
           icon="el-icon-delete"
           circle
           type="danger"
+          :loading="image.loading"
+          @click="onDelete(image)"
           ></el-button>
         </div>
       </el-col>
@@ -56,13 +66,36 @@
         :total="total_count">
       </el-pagination>
     </div>
+    <el-dialog
+      title="上穿素材"
+      append-to-body
+      :visible.sync="dialogVisible"
+      width="30%"
+    >
+      <el-upload
+        class="upload-demo"
+        drag
+        action="https://jsonplaceholder.typicode.com/posts/"
+        multiple
+        accpet=".png"
+      >
+        <i class="el-icon-upload"></i>
+        <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
+        <div class="el-upload__tip" slot="tip">只能上传jpg/png文件，且不超过500kb</div>
+      </el-upload>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="dialogVisible = false">取 消</el-button>
+        <el-button type="primary" @click="dialogVisible = false">确 定</el-button>
+      </span>
+    </el-dialog>
   </div>
 </template>
 
 <script>
 import {
   getImages,
-  collectImage
+  collectImage,
+  deleteImage
 } from '@/api/image.js'
 export default {
   name: 'ImageList',
@@ -75,7 +108,9 @@ export default {
       page: 1,
       per_page: 12,
       total_count: 0,
-      images: []
+      images: [],
+      selected: null,
+      dialogVisible: false
     }
   },
   computed: {},
@@ -114,6 +149,13 @@ export default {
         image.is_collected = !image.is_collected
         image.loading = false
       })
+    },
+    onDelete (image) {
+      image.loading = true
+      deleteImage(image.id).then(res => {
+        image.loading = false
+        this.loadImages(this.page)
+      })
     }
   }
 }
@@ -144,5 +186,21 @@ export default {
 }
 .el-button.is-circle {
     padding: 8px;
+}
+.selected {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  top: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  div {
+    width:150px;
+    height:150px;
+    background: url(./selected.png) no-repeat;
+    background-size: contain;
+  }
 }
 </style>
