@@ -9,24 +9,28 @@
       </div>
       <el-row>
         <el-col :span="14">
-          <el-form ref="form" :model="form" label-width="80px">
-            <el-form-item label="编号">
-              <el-input v-model="form.name"></el-input>
+          <el-form ref="updateuser-form" :rules="formRules" :model="user" label-width="80px">
+            <el-form-item label="编号" >
+              <el-input v-model="user.id" disabled></el-input>
             </el-form-item>
-            <el-form-item label="手机">
-              <el-input v-model="form.name"></el-input>
+            <el-form-item label="手机" >
+              <el-input v-model="user.mobile" disabled></el-input>
             </el-form-item>
-            <el-form-item label="媒体名称">
-              <el-input v-model="form.name"></el-input>
+            <el-form-item label="媒体名称" prop="name">
+              <el-input v-model="user.name"></el-input>
             </el-form-item>
-            <el-form-item label="媒体介绍">
-              <el-input type="textarea" v-model="form.desc"></el-input>
+            <el-form-item label="媒体介绍" prop="intro">
+              <el-input type="textarea" v-model="user.intro"></el-input>
             </el-form-item>
-            <el-form-item label="邮箱">
-              <el-input v-model="form.name"></el-input>
+            <el-form-item label="邮箱" prop="email">
+              <el-input v-model="user.email"></el-input>
             </el-form-item>
             <el-form-item>
-              <el-button type="primary">立即创建</el-button>
+              <el-button
+                type="primary"
+                :loading="updateProfileLoading"
+                @click="onUpdateUser"
+              >保存设置</el-button>
             </el-form-item>
           </el-form>
         </el-col>
@@ -78,12 +82,13 @@
 
 <script>
 import {
-  // getUserProfile,
-  // updateUserProfile,
+  getUserProfile,
+  updateUserProfile,
   updateUserPhoto
 } from '@/api/user.js'
 import 'cropperjs/dist/cropper.css'
 import Cropper from 'cropperjs'
+import bus from '@/utils/bus.js'
 
 export default {
   name: 'AccontIndex',
@@ -92,33 +97,54 @@ export default {
   data () {
     return {
       user: {
+        id: null,
         name: '',
         email: '',
         mobile: '',
-        photo: ''
-      },
-      form: {
-        name: '',
-        region: '',
-        date1: '',
-        date2: '',
-        delivery: false,
-        type: [],
-        resource: '',
-        desc: ''
+        photo: '',
+        intro: ''
       },
       dialogVisible: false,
       previewImage: '',
       updatePhotoLoading: false,
-      cropper: null
+      updateProfileLoading: false,
+      cropper: null,
+      formRules: {
+        name: [
+          { required: true, message: '请输入媒体名称', trigger: 'blur' },
+          { min: 2, max: 8, message: '长度在2到8个字符', trigger: 'blur' }
+        ],
+        intro: [
+          { required: true, message: '请输入媒体介绍', trigger: 'blur' }
+        ],
+        email: [
+          { required: true, message: '请输入邮箱', trigger: 'blur' },
+          {
+            validator (rule, value, callback) {
+              const reg = /^[A-Za-z0-9\u4e00-\u9fa5]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$/
+              if (!reg.test(value)) {
+                callback(new Error('邮箱格式错误'))
+              } else {
+                callback()
+              }
+            }
+          }
+        ]
+      }
     }
   },
   computed: {},
   watch: {},
   created () {
+    this.loadUser()
   },
   mounted () {},
   methods: {
+    loadUser () {
+      getUserProfile().then(res => {
+        this.user = res.data.data
+      })
+    },
     onFileChange () {
       const file = this.$refs.file.files[0]
       this.previewImage = window.URL.createObjectURL(file)
@@ -155,6 +181,36 @@ export default {
             type: 'success',
             message: '更新头像成功'
           })
+          bus.$emit('update-user', this.user)
+        }).catch(() => {
+          this.$message.error('更新头像失败')
+        })
+      })
+    },
+    onUpdateUser () {
+      this.$refs['updateuser-form'].validate(valid => {
+        if (!valid) {
+          return
+        }
+        this.updateProfileLoading = true
+        const { name, email, intro } = this.user
+        console.log(name)
+        console.log(email)
+        console.log(intro)
+        updateUserProfile({
+          name,
+          email,
+          intro
+        }).then(res => {
+          this.updateProfileLoading = false
+          this.$message({
+            type: 'sucess',
+            message: '用户信息更新成功'
+          })
+          bus.$emit('update-user', this.user)
+        }).catch(() => {
+          this.updateProfileLoading = false
+          this.$message.error('用户信息更新失败')
         })
       })
     }

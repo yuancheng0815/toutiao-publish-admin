@@ -39,7 +39,12 @@ export default {
     // 组件初始化好后 请求获取用户信息
     this.loadUserProfile()
   },
-  mounted () {},
+  mounted () {
+    bus.$on('update-user', data => {
+      this.user.name = data.name
+      this.user.photo = data.photo
+    })
+  },
   methods: {
     // 除了登录接口 其他所有接口都需要经过授权才能访问
     // 或者说，除了登录接口 其它接口都需要提供身份令牌才能获取数据
