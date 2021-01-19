@@ -13,29 +13,31 @@
         type="success"
         size="mini"
         @click="dialogVisible = true"
+        v-if="isShowAdd"
       >添加素材</el-button>
     </div>
     <el-row :gutter="10">
       <el-col
         :xs="12"
-        :sm=6
-        :md=6
-        :lg=4
+        :sm="6"
+        :md="6"
+        :lg="4"
         v-for="(image, index) in images"
         :key="index"
         @click.native="selected = index"
         class="image-item"
+        style="height:100px;"
       >
         <el-image
-          style="height: 150px;width:100%;"
+          style="height: 100px;width:100%;"
           :src="image.url"
           fit="cover"
           lazy
         ></el-image>
-        <div class="selected" v-if="selected === index">
+        <div class="selected" v-if="isShowSelected && selected === index">
           <div></div>
         </div>
-        <div class="image-action">
+        <div class="image-action" v-if="isShowAction">
           <el-button
             :icon="image.is_collected ? 'el-icon-star-on' : 'el-icon-star-off'"
             @click="onCollect(image)"
@@ -67,21 +69,24 @@
       </el-pagination>
     </div>
     <el-dialog
-      title="上穿素材"
+      title="上传素材"
       append-to-body
       :visible.sync="dialogVisible"
-      width="30%"
+      width="400px"
     >
       <el-upload
         class="upload-demo"
+        action=""
         drag
-        action="https://jsonplaceholder.typicode.com/posts/"
         multiple
-        accpet=".png"
+        accept=".png,.jpg,gif,jpeg"
+        :before-upload="beforeUpload"
+        :http-request="uploadImage"
+        :show-file-list="false"
       >
         <i class="el-icon-upload"></i>
         <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
-        <div class="el-upload__tip" slot="tip">只能上传jpg/png文件，且不超过500kb</div>
+        <div class="el-upload__tip" slot="tip">只能上传jpg/png/gif文件，且不超过500kb</div>
       </el-upload>
       <span slot="footer" class="dialog-footer">
         <el-button @click="dialogVisible = false">取 消</el-button>
@@ -95,15 +100,31 @@
 import {
   getImages,
   collectImage,
-  deleteImage
+  deleteImage,
+  uploadImage
 } from '@/api/image.js'
 export default {
   name: 'ImageList',
   components: {},
-  props: {},
+  props: {
+    // 是否显示添加素材
+    isShowAdd: {
+      type: Boolean,
+      default: true
+    },
+    // 是否显示收藏和删除按钮
+    isShowAction: {
+      type: Boolean,
+      default: true
+    },
+    // 是否显示背景的打勾按钮
+    isShowSelected: {
+      type: Boolean,
+      default: false
+    }
+  },
   data () {
     return {
-      radio2: null,
       collect: false,
       page: 1,
       per_page: 12,
@@ -156,6 +177,30 @@ export default {
         image.loading = false
         this.loadImages(this.page)
       })
+    },
+    beforeUpload (file) {
+      if (file.size > 400000) {
+        this.$message.error('图片最大不能超过4Kb')
+        return false
+      }
+      if (file.type !== 'image/png' && file.type !== 'image/jpeg' && file.type !== 'image/gif') {
+        this.$message.error('图片格式不正确')
+        return false
+      }
+    },
+    uploadImage (file) {
+      const fd = new FormData()
+      fd.append('image', file.file)
+      uploadImage(fd).then(res => {
+        this.$message({
+          type: 'success',
+          message: '图片上传成功'
+        })
+        this.loadImages(1)
+        this.dialogVisible = false
+      }).catch((err) => {
+        this.$message.error('上传图片失败' + err)
+      })
     }
   }
 }
@@ -189,7 +234,7 @@ export default {
 }
 .selected {
   position: absolute;
-  left: 0;
+  left: 18%;
   right: 0;
   bottom: 0;
   top: 0;
@@ -197,8 +242,8 @@ export default {
   justify-content: center;
   align-items: center;
   div {
-    width:150px;
-    height:150px;
+    width:100%;
+    height:100%;
     background: url(./selected.png) no-repeat;
     background-size: contain;
   }

@@ -70,11 +70,11 @@
       </div>
       <span slot="footer" class="dialog-footer">
         <el-button @click="dialogVisible = false">取 消</el-button>
-        <el-button
+        <!-- <el-button
           type="primary"
           :loading="updatePhotoLoading"
           @click="onUpdatePhoto"
-        >确 定</el-button>
+        >确 定</el-button> -->
       </span>
     </el-dialog>
   </div>
@@ -194,9 +194,6 @@ export default {
         }
         this.updateProfileLoading = true
         const { name, email, intro } = this.user
-        console.log(name)
-        console.log(email)
-        console.log(intro)
         updateUserProfile({
           name,
           email,

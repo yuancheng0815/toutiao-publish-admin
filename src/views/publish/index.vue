@@ -35,11 +35,13 @@
             <el-radio :label="-1">自动</el-radio>
           </el-radio-group>
           <template v-if="article.cover.type > 0">
-            <el-row :gutter="20">
-              <el-col :sapn="4" v-for="(item, index) in article.cover.type" :key="index">
-                <upload-image></upload-image>
-              </el-col>
-            </el-row>
+            <div>
+              <upload-image
+                v-for="(item, index) in article.cover.type"
+                :key="index"
+                v-model="article.cover.images[index]"
+              ></upload-image>
+            </div>
           </template>
         </el-form-item>
         <el-form-item label="频道" prop="channel_id">
